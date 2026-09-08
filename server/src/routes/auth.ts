@@ -10,8 +10,8 @@ const router = Router();
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    res.status(400).json({ error: 'Email and password are required.' });
+  if (!email) {
+    res.status(400).json({ error: 'Email address is required.' });
     return;
   }
 
@@ -25,15 +25,25 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     );
 
     if (userRes.rows.length === 0) {
-      res.status(401).json({ error: 'Invalid email or password.' });
+      res.status(401).json({ error: 'User account not found.' });
       return;
     }
 
     const user = userRes.rows[0];
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) {
-      res.status(401).json({ error: 'Invalid email or password.' });
-      return;
+    const isDemoAccount = user.email.toLowerCase().endsWith('@demo.foodsafe');
+
+    // For demo accounts, password is not required.
+    // For non-demo accounts, verify password with bcrypt.
+    if (!isDemoAccount) {
+      if (!password) {
+        res.status(400).json({ error: 'Password is required for production accounts.' });
+        return;
+      }
+      const isMatch = await bcrypt.compare(password, user.password_hash);
+      if (!isMatch) {
+        res.status(401).json({ error: 'Invalid password.' });
+        return;
+      }
     }
 
     if (user.status !== 'ACTIVE') {
