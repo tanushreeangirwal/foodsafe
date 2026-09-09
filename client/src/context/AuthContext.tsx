@@ -12,60 +12,22 @@ interface AuthContextType {
   switchRole: (role: UserRole) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  loginNotificationUser: User | null;
+  dismissLoginNotification: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem('foodsafe_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [token, setToken] = useState<string | null>(getAuthToken());
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Whenever the link is opened, user is null so LoginView is immediately visible first
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [loginNotificationUser, setLoginNotificationUser] = useState<User | null>(null);
 
   const fetchCurrentUser = async () => {
-    try {
-      const data = await apiRequest<{ user: User }>('/auth/me');
-      if (data && data.user) {
-        setUser(data.user);
-        localStorage.setItem('foodsafe_user', JSON.stringify(data.user));
-        return;
-      }
-    } catch (err) {
-      console.warn('Backend unavailable for session verification, checking cached session...');
-    }
-
-    const savedUserStr = localStorage.getItem('foodsafe_user');
-    if (savedUserStr) {
-      try {
-        const parsed = JSON.parse(savedUserStr);
-        if (parsed && parsed.role) {
-          setUser(parsed);
-          return;
-        }
-      } catch {}
-    }
-
-    // Only clear if no valid cached user
-    if (!user) {
-      clearAuthToken();
-      setToken(null);
-      setUser(null);
-    }
+    // Left available for explicit session refresh
   };
-
-  useEffect(() => {
-    if (token) {
-      fetchCurrentUser().finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
 
   const login = async (email: string, pass: string) => {
     setIsLoading(true);
@@ -95,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuthToken(tokenStr);
     setToken(tokenStr);
     setUser(loggedUser);
+    setLoginNotificationUser(loggedUser);
     localStorage.setItem('foodsafe_user', JSON.stringify(loggedUser));
     setIsLoading(false);
   };
@@ -120,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuthToken(tokenStr);
     setToken(tokenStr);
     setUser(loggedUser);
+    setLoginNotificationUser(loggedUser);
     localStorage.setItem('foodsafe_user', JSON.stringify(loggedUser));
     setIsLoading(false);
   };
@@ -129,6 +93,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('foodsafe_user');
     setToken(null);
     setUser(null);
+    setLoginNotificationUser(null);
+  };
+
+  const dismissLoginNotification = () => {
+    setLoginNotificationUser(null);
   };
 
   return (
@@ -141,7 +110,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginDemo,
         switchRole: loginDemo,
         logout,
-        refreshUser: fetchCurrentUser
+        refreshUser: fetchCurrentUser,
+        loginNotificationUser,
+        dismissLoginNotification
       }}
     >
       {children}

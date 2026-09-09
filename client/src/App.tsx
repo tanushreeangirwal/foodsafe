@@ -22,11 +22,12 @@ import { BusinessCreateModal } from './components/BusinessCreateModal';
 import { RegulatoryAlertModal } from './components/RegulatoryAlertModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SettingsView } from './views/SettingsView';
+import { LoginNotificationModal } from './components/LoginNotificationModal';
 import { ClientRequirement, EvidenceDocument } from './types';
 import { apiRequest } from './api';
 
 export const App: React.FC = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, loginNotificationUser, dismissLoginNotification } = useAuth();
   const { showToast } = useToast();
   
   // Active view state
@@ -38,6 +39,38 @@ export const App: React.FC = () => {
   const [reviewDoc, setReviewDoc] = useState<EvidenceDocument | null>(null);
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
+
+  // Trigger login notification toast when user logs in
+  useEffect(() => {
+    if (loginNotificationUser) {
+      const name = loginNotificationUser.name.split(' ')[0];
+      if (loginNotificationUser.role === 'CLIENT') {
+        showToast(
+          `Action Required (${loginNotificationUser.business_name || 'Facility'})`,
+          `Welcome back, ${name}! You have 2 compliance deadlines requiring urgent attention.`,
+          'warning'
+        );
+      } else if (loginNotificationUser.role === 'CONSULTANT') {
+        showToast(
+          'Command Centre Online',
+          `Welcome back, ${name}! 3 evidence verification submissions awaiting your review.`,
+          'info'
+        );
+      } else if (loginNotificationUser.role === 'MANAGER') {
+        showToast(
+          'Daily Facility Tasks',
+          `Welcome back, ${name}! 3 facility compliance checklists scheduled for today.`,
+          'info'
+        );
+      } else {
+        showToast(
+          'Shift Active',
+          `Welcome back, ${name}! Your assigned shift checklist is ready.`,
+          'info'
+        );
+      }
+    }
+  }, [loginNotificationUser]);
 
   // Fetch pending review count periodically for consultant badge
   const fetchPendingCount = async () => {
@@ -219,6 +252,18 @@ export const App: React.FC = () => {
           </ErrorBoundary>
         </main>
       </div>
+
+      {/* Login Welcome Notification Pop-up Modal */}
+      {loginNotificationUser && (
+        <LoginNotificationModal
+          user={loginNotificationUser}
+          onClose={dismissLoginNotification}
+          onNavigate={(view, data) => {
+            dismissLoginNotification();
+            handleNavigate(view, data);
+          }}
+        />
+      )}
 
       {/* Prominent Regulatory Alert Modal for Clients/Managers with unacknowledged directives */}
       <RegulatoryAlertModal />
