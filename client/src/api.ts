@@ -33,7 +33,46 @@ function resolveMockEndpoint(endpoint: string): any {
   if (clean.startsWith('/businesses/')) {
     const id = parseInt(clean.replace('/businesses/', ''), 10);
     const biz = MOCK_BUSINESSES.find(b => b.id === id) || MOCK_BUSINESSES[0];
-    return { business: biz, requirements: MOCK_REQUIREMENTS };
+    const bizRequirements = MOCK_REQUIREMENTS.map((r, idx) => ({
+      ...r,
+      client_id: biz.id,
+      business_name: biz.business_name,
+      custom_name: r.custom_name || r.requirement_name,
+      template_name: r.template_name || r.requirement_name,
+      requirement_template_id: (r as any).template_id || (r as any).requirement_template_id || (idx + 1),
+      documents: (r as any).documents || [
+        {
+          id: r.id * 10 + 1,
+          client_requirement_id: r.id,
+          file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+          file_name: `${biz.business_name.replace(/\s+/g, '_')}_${(r.requirement_name || 'Evidence').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+          file_type: 'application/pdf',
+          file_size: 184500,
+          uploaded_by: 2,
+          uploader_name: biz.contact_person,
+          uploaded_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+          review_status: r.status === 'Approved' ? 'APPROVED' : 'PENDING',
+          reviewer_notes: r.status === 'Approved' ? 'Verified by Lead Auditor' : undefined
+        }
+      ]
+    }));
+
+    const regulatory = MOCK_REGULATORY.map(u => ({
+      ...u,
+      summary: (u as any).summary || u.description || 'Mandatory regulatory compliance directive.',
+      published_date: (u as any).published_date || ((u as any).created_at ? (u as any).created_at.split('T')[0] : '2026-03-01'),
+      effective_date: u.effective_date || '2026-04-01',
+      source: (u as any).source || 'FSSAI Notification',
+      acknowledgement_status: (u as any).acknowledgement_status || 'ACKNOWLEDGED'
+    }));
+
+    return {
+      business: biz,
+      requirements: bizRequirements,
+      regulatoryUpdates: regulatory,
+      activityTrail: MOCK_AUDIT_LOGS,
+      notifications: []
+    };
   }
   if (clean === '/categories') {
     return { categories: MOCK_CATEGORIES };
@@ -49,6 +88,63 @@ function resolveMockEndpoint(endpoint: string): any {
   }
   if (clean === '/notifications' || clean.startsWith('/notifications')) {
     return { notifications: [] };
+  }
+  if (clean === '/evidence/pending' || clean.startsWith('/evidence/pending')) {
+    return {
+      pendingDocuments: [
+        {
+          id: 1001,
+          client_requirement_id: 101,
+          business_name: 'Shree Foods',
+          category_name: 'Pickle Manufacturer',
+          requirement_name: 'Water Potability Testing (IS 10500)',
+          priority: 'HIGH',
+          due_date: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
+          file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+          file_name: 'Water_Test_NABL_Report_Q1_2026.pdf',
+          file_type: 'application/pdf',
+          file_size: 215400,
+          uploaded_by: 2,
+          uploader_name: 'Rajesh Sharma',
+          uploaded_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+          review_status: 'PENDING'
+        },
+        {
+          id: 1003,
+          client_requirement_id: 103,
+          business_name: 'Shree Foods',
+          category_name: 'Pickle Manufacturer',
+          requirement_name: 'Pest Control Audit & Treatment',
+          priority: 'MEDIUM',
+          due_date: new Date(Date.now() + 12 * 86400000).toISOString().split('T')[0],
+          file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+          file_name: 'PestControl_Service_Card_March.pdf',
+          file_type: 'application/pdf',
+          file_size: 132000,
+          uploaded_by: 3,
+          uploader_name: 'Santosh Kamble',
+          uploaded_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+          review_status: 'PENDING'
+        },
+        {
+          id: 1005,
+          client_requirement_id: 105,
+          business_name: 'Annapurna Foods',
+          category_name: 'Masala Manufacturer',
+          requirement_name: 'Pesticide Residue & Heavy Metal Test',
+          priority: 'CRITICAL',
+          due_date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0],
+          file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+          file_name: 'Annapurna_Pesticide_Residue_Audit.pdf',
+          file_type: 'application/pdf',
+          file_size: 340000,
+          uploaded_by: 4,
+          uploader_name: 'Vikas Deshmukh',
+          uploaded_at: new Date(Date.now() - 8 * 3600000).toISOString(),
+          review_status: 'PENDING'
+        }
+      ]
+    };
   }
   if (clean === '/evidence' || clean.startsWith('/evidence')) {
     return { documents: [] };

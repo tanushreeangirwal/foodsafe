@@ -39,19 +39,33 @@ export const ClientComplianceProfile: React.FC<Props> = ({
   } | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'requirements' | 'regulatory' | 'documents' | 'history'>('requirements');
   const [selectedReq, setSelectedReq] = useState<ClientRequirement | null>(null);
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await apiRequest(`/businesses/${businessId}`);
-      setProfile(data);
-      if (data.requirements && data.requirements.length > 0) {
-        setSelectedReq(data.requirements[0]);
+      if (data && (data.business || data.id)) {
+        const normalizedData = {
+          business: data.business || data,
+          requirements: Array.isArray(data.requirements) ? data.requirements : [],
+          regulatoryUpdates: Array.isArray(data.regulatoryUpdates) ? data.regulatoryUpdates : [],
+          notifications: Array.isArray(data.notifications) ? data.notifications : [],
+          activityTrail: Array.isArray(data.activityTrail) ? data.activityTrail : []
+        };
+        setProfile(normalizedData);
+        if (normalizedData.requirements.length > 0) {
+          setSelectedReq(normalizedData.requirements[0]);
+        }
+      } else {
+        throw new Error('Business details could not be found.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to load client profile:', e);
+      setError(e.message || 'Failed to load client profile.');
     } finally {
       setLoading(false);
     }
@@ -61,20 +75,49 @@ export const ClientComplianceProfile: React.FC<Props> = ({
     fetchProfile();
   }, [businessId]);
 
-  if (loading || !profile) {
+  if (loading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
-        Loading compliance profile...
+      <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
+        <div style={{ width: '32px', height: '32px', border: '3px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+        <div style={{ fontWeight: 600, color: '#1e293b' }}>Loading compliance dossier...</div>
+        <div style={{ fontSize: '13px', marginTop: '4px' }}>Retrieving requirements, evidence records, and regulatory status</div>
       </div>
     );
   }
 
-  const { business, requirements, regulatoryUpdates, activityTrail } = profile;
+  if (error || !profile) {
+    return (
+      <div style={{ padding: '48px 24px', textAlign: 'center', maxWidth: '520px', margin: '30px auto' }}>
+        <div style={{ display: 'inline-flex', padding: '12px', background: '#fee2e2', borderRadius: '50%', color: '#dc2626', marginBottom: '14px' }}>
+          <AlertCircle size={28} />
+        </div>
+        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>
+          Unable to Load Profile
+        </h3>
+        <p style={{ fontSize: '13.5px', color: '#64748b', marginBottom: '20px', lineHeight: 1.5 }}>
+          {error || 'Unable to retrieve the requested business profile at this moment.'}
+        </p>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <button className="btn btn-secondary btn-sm" onClick={onBack}>
+            <ChevronLeft size={14} /> Back to Businesses
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={fetchProfile}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const business = profile.business || ({} as Business);
+  const requirements = Array.isArray(profile.requirements) ? profile.requirements : [];
+  const regulatoryUpdates = Array.isArray(profile.regulatoryUpdates) ? profile.regulatoryUpdates : [];
+  const activityTrail = Array.isArray(profile.activityTrail) ? profile.activityTrail : [];
 
   // Flatten all documents for the documents tab
   const allDocuments: { doc: EvidenceDocument; req: ClientRequirement }[] = [];
   requirements.forEach(r => {
-    if (r.documents && r.documents.length > 0) {
+    if (r && Array.isArray(r.documents) && r.documents.length > 0) {
       r.documents.forEach(d => allDocuments.push({ doc: d, req: r }));
     }
   });
@@ -233,10 +276,10 @@ export const ClientComplianceProfile: React.FC<Props> = ({
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>
-                          {req.custom_name || req.template_name}
+                          {req.custom_name || req.template_name || (req as any).requirement_name || 'Compliance Requirement'}
                         </div>
                         <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                          Type: {req.requirement_type} • Frequency: {req.frequency}
+                          Type: {req.requirement_type || 'STATUTORY'} • Frequency: {req.frequency || 'ANNUAL'}
                         </div>
                       </div>
                       {getStatusBadge(req.status)}
@@ -244,7 +287,7 @@ export const ClientComplianceProfile: React.FC<Props> = ({
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', fontSize: '12.5px' }}>
                       <span style={{ color: req.status === 'Overdue' ? '#dc2626' : '#475569' }}>
-                        <strong>Due:</strong> {new Date(req.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        <strong>Due:</strong> {req.due_date ? new Date(req.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                         {req.expiry_date && (
                           <span style={{ marginLeft: '8px', color: '#64748b' }}>
                             (Expires: {new Date(req.expiry_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })})
@@ -271,7 +314,7 @@ export const ClientComplianceProfile: React.FC<Props> = ({
                     Requirement Details
                   </span>
                   <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>
-                    {selectedReq.custom_name || selectedReq.template_name}
+                    {selectedReq.custom_name || selectedReq.template_name || (selectedReq as any).requirement_name || 'Requirement Details'}
                   </h3>
                 </div>
                 {getStatusBadge(selectedReq.status)}
@@ -407,7 +450,7 @@ export const ClientComplianceProfile: React.FC<Props> = ({
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                       <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>{u.title}</h3>
-                      <p style={{ fontSize: '13px', color: '#475569', marginTop: '4px' }}>{u.summary}</p>
+                      <p style={{ fontSize: '13px', color: '#475569', marginTop: '4px' }}>{u.summary || (u as any).description || 'Compliance bulletin.'}</p>
                     </div>
                     {u.acknowledgement_status === 'ACKNOWLEDGED' ? (
                       <span className="badge badge-compliant">
@@ -421,10 +464,10 @@ export const ClientComplianceProfile: React.FC<Props> = ({
                       </span>
                     )}
                   </div>
-                  <div style={{ marginTop: '10px', fontSize: '12px', color: '#64748b', display: 'flex', gap: '16px' }}>
-                    <span>Published: {u.published_date}</span>
+                  <div style={{ marginTop: '10px', fontSize: '12px', color: '#64748b', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <span>Published: {u.published_date || ((u as any).created_at ? new Date((u as any).created_at).toLocaleDateString() : 'Recent')}</span>
                     <span>Effective: {u.effective_date || 'Immediate'}</span>
-                    <span>Source: {u.source}</span>
+                    <span>Source: {u.source || 'FSSAI Authority'}</span>
                   </div>
                 </div>
               ))
@@ -465,8 +508,8 @@ export const ClientComplianceProfile: React.FC<Props> = ({
                       <div style={{ fontWeight: 600, color: '#0f172a' }}>{doc.file_name}</div>
                       <div style={{ fontSize: '11px', color: '#64748b' }}>{doc.file_type}</div>
                     </td>
-                    <td>{req.custom_name || req.template_name}</td>
-                    <td>{new Date(doc.uploaded_at).toLocaleDateString()}</td>
+                    <td>{req.custom_name || req.template_name || (req as any).requirement_name}</td>
+                    <td>{doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : '—'}</td>
                     <td>
                       {doc.review_status === 'APPROVED' && <span className="badge badge-compliant">Approved</span>}
                       {doc.review_status === 'PENDING' && <span className="badge badge-submitted">Pending Review</span>}
@@ -504,22 +547,30 @@ export const ClientComplianceProfile: React.FC<Props> = ({
               </tr>
             </thead>
             <tbody>
-              {activityTrail.map(log => (
-                <tr key={log.id}>
-                  <td style={{ fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
-                    {new Date(log.timestamp).toLocaleString()}
-                  </td>
-                  <td>
-                    <span style={{ fontWeight: 600, fontSize: '12.5px', color: '#0f172a' }}>
-                      {log.action.replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  <td>{log.user_name || 'System'}</td>
-                  <td style={{ fontSize: '12px', color: '#64748b' }}>
-                    {log.metadata ? JSON.stringify(log.metadata) : '—'}
+              {activityTrail.length === 0 ? (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
+                    No activity records recorded yet.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                activityTrail.map(log => (
+                  <tr key={log.id}>
+                    <td style={{ fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
+                      {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Recent'}
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: 600, fontSize: '12.5px', color: '#0f172a' }}>
+                        {log.action ? log.action.replace(/_/g, ' ') : 'ACTION'}
+                      </span>
+                    </td>
+                    <td>{log.user_name || 'System'}</td>
+                    <td style={{ fontSize: '12px', color: '#64748b' }}>
+                      {log.metadata ? (typeof log.metadata === 'object' ? JSON.stringify(log.metadata) : String(log.metadata)) : '—'}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

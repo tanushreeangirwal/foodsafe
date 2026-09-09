@@ -278,7 +278,10 @@ export const MOCK_REQUIREMENTS = [
     client_id: 1,
     business_name: 'Shree Foods',
     template_id: 1,
+    requirement_template_id: 1,
     requirement_name: 'Water Potability Testing (IS 10500)',
+    custom_name: 'Water Potability Testing (IS 10500)',
+    template_name: 'Water Potability Testing (IS 10500)',
     requirement_type: 'SAFETY',
     frequency: 'QUARTERLY',
     priority: 'HIGH',
@@ -286,14 +289,33 @@ export const MOCK_REQUIREMENTS = [
     due_date: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
     expiry_date: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
     evidence_type: 'NABL Lab Report (PDF)',
-    evidence_count: 1
+    evidence_count: 1,
+    consultant_notes: 'Critical quarterly testing for coliform and TDS parameters in accordance with IS 10500 drinking water norms.',
+    documents: [
+      {
+        id: 1001,
+        client_requirement_id: 101,
+        file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        file_name: 'Water_Test_NABL_Report_Q1_2026.pdf',
+        file_type: 'application/pdf',
+        file_size: 215400,
+        uploaded_by: 2,
+        uploader_name: 'Rajesh Sharma',
+        uploaded_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+        review_status: 'PENDING',
+        reviewer_notes: undefined
+      }
+    ]
   },
   {
     id: 102,
     client_id: 1,
     business_name: 'Shree Foods',
     template_id: 2,
+    requirement_template_id: 2,
     requirement_name: 'FSSAI Licence Renewal',
+    custom_name: 'FSSAI Licence Renewal',
+    template_name: 'FSSAI Licence Renewal',
     requirement_type: 'STATUTORY',
     frequency: 'ANNUAL',
     priority: 'CRITICAL',
@@ -301,14 +323,33 @@ export const MOCK_REQUIREMENTS = [
     due_date: new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
     expiry_date: new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
     evidence_type: 'Licence Copy',
-    evidence_count: 2
+    evidence_count: 1,
+    consultant_notes: 'Central / State FSSAI registration endorsement valid through 2026-2027.',
+    documents: [
+      {
+        id: 1002,
+        client_requirement_id: 102,
+        file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        file_name: 'FSSAI_Central_Licence_Endorsement.pdf',
+        file_type: 'application/pdf',
+        file_size: 480100,
+        uploaded_by: 2,
+        uploader_name: 'Rajesh Sharma',
+        uploaded_at: new Date(Date.now() - 40 * 86400000).toISOString(),
+        review_status: 'APPROVED',
+        reviewer_notes: 'Verified against FoSCoS portal registration #11521034000189'
+      }
+    ]
   },
   {
     id: 103,
     client_id: 1,
     business_name: 'Shree Foods',
     template_id: 3,
+    requirement_template_id: 3,
     requirement_name: 'Pest Control Audit & Treatment',
+    custom_name: 'Pest Control Audit & Treatment',
+    template_name: 'Pest Control Audit & Treatment',
     requirement_type: 'HYGIENE',
     frequency: 'MONTHLY',
     priority: 'MEDIUM',
@@ -316,14 +357,33 @@ export const MOCK_REQUIREMENTS = [
     due_date: new Date(Date.now() + 12 * 86400000).toISOString().split('T')[0],
     expiry_date: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
     evidence_type: 'Service Certificate',
-    evidence_count: 1
+    evidence_count: 1,
+    consultant_notes: 'Monthly rodent and insect pest bait station inspection certificate by licensed agency.',
+    documents: [
+      {
+        id: 1003,
+        client_requirement_id: 103,
+        file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        file_name: 'PestControl_Service_Card_March.pdf',
+        file_type: 'application/pdf',
+        file_size: 132000,
+        uploaded_by: 3,
+        uploader_name: 'Santosh Kamble',
+        uploaded_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+        review_status: 'PENDING',
+        reviewer_notes: undefined
+      }
+    ]
   },
   {
     id: 104,
     client_id: 1,
     business_name: 'Shree Foods',
     template_id: 4,
+    requirement_template_id: 4,
     requirement_name: 'FoSTaC Supervisor Certification',
+    custom_name: 'FoSTaC Supervisor Certification',
+    template_name: 'FoSTaC Supervisor Certification',
     requirement_type: 'STATUTORY',
     frequency: 'BIENNIAL',
     priority: 'MEDIUM',
@@ -331,7 +391,23 @@ export const MOCK_REQUIREMENTS = [
     due_date: new Date(Date.now() + 340 * 86400000).toISOString().split('T')[0],
     expiry_date: new Date(Date.now() + 340 * 86400000).toISOString().split('T')[0],
     evidence_type: 'FoSTaC Certificate',
-    evidence_count: 1
+    evidence_count: 1,
+    consultant_notes: 'Food Safety Supervisor certified under FSSAI FoSTaC scheme.',
+    documents: [
+      {
+        id: 1004,
+        client_requirement_id: 104,
+        file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        file_name: 'FoSTaC_Supervisor_Certification_Batch2025.pdf',
+        file_type: 'application/pdf',
+        file_size: 320000,
+        uploaded_by: 2,
+        uploader_name: 'Rajesh Sharma',
+        uploaded_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+        review_status: 'APPROVED',
+        reviewer_notes: 'Accredited certificate valid through 2027.'
+      }
+    ]
   }
 ];
 

@@ -20,6 +20,8 @@ import { EvidenceUploadModal } from './components/EvidenceUploadModal';
 import { EvidenceReviewModal } from './components/EvidenceReviewModal';
 import { BusinessCreateModal } from './components/BusinessCreateModal';
 import { RegulatoryAlertModal } from './components/RegulatoryAlertModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { SettingsView } from './views/SettingsView';
 import { ClientRequirement, EvidenceDocument } from './types';
 import { apiRequest } from './api';
 
@@ -71,8 +73,12 @@ export const App: React.FC = () => {
   }, [user?.role]);
 
   const handleNavigate = (view: string, data?: any) => {
-    if (view === 'client-profile' && data?.businessId) {
-      setSelectedBusinessId(data.businessId);
+    if (view === 'client-profile') {
+      if (data?.businessId) {
+        setSelectedBusinessId(data.businessId);
+      } else if (!selectedBusinessId) {
+        setSelectedBusinessId(1);
+      }
     }
     setCurrentView(view);
   };
@@ -119,91 +125,98 @@ export const App: React.FC = () => {
         />
 
         <main className="content-body">
-          {/* CONSULTANT VIEWS */}
-          {user?.role === 'CONSULTANT' && (
-            <>
-              {currentView === 'dashboard' && (
-                <ComplianceCommandCentre
-                  onNavigate={handleNavigate}
-                  onOpenAddBusiness={() => setShowAddBusiness(true)}
-                />
-              )}
+          <ErrorBoundary>
+            {/* Universal Views across roles */}
+            {currentView === 'settings' && (
+              <SettingsView />
+            )}
 
-              {currentView === 'businesses' && (
-                <BusinessesListView
-                  onSelectBusiness={(id) => handleNavigate('client-profile', { businessId: id })}
-                  onOpenAddBusiness={() => setShowAddBusiness(true)}
-                />
-              )}
+            {currentView === 'client-profile' && (
+              <ClientComplianceProfile
+                businessId={selectedBusinessId || user?.client_id || 1}
+                onBack={() => handleNavigate(user?.role === 'CONSULTANT' ? 'businesses' : 'whats-due')}
+                onOpenUpload={(req) => setUploadReq(req)}
+                onOpenReviewModal={(doc, req) => setReviewDoc(doc)}
+              />
+            )}
 
-              {currentView === 'client-profile' && selectedBusinessId && (
-                <ClientComplianceProfile
-                  businessId={selectedBusinessId}
-                  onBack={() => handleNavigate('businesses')}
-                  onOpenUpload={(req) => setUploadReq(req)}
-                  onOpenReviewModal={(doc, req) => setReviewDoc(doc)}
-                />
-              )}
+            {/* CONSULTANT VIEWS */}
+            {user?.role === 'CONSULTANT' && (
+              <>
+                {currentView === 'dashboard' && (
+                  <ComplianceCommandCentre
+                    onNavigate={handleNavigate}
+                    onOpenAddBusiness={() => setShowAddBusiness(true)}
+                  />
+                )}
 
-              {currentView === 'templates' && (
-                <RequirementTemplatesView />
-              )}
+                {currentView === 'businesses' && (
+                  <BusinessesListView
+                    onSelectBusiness={(id) => handleNavigate('client-profile', { businessId: id })}
+                    onOpenAddBusiness={() => setShowAddBusiness(true)}
+                  />
+                )}
 
-              {currentView === 'regulatory' && (
-                <RegulatoryUpdateCentre />
-              )}
+                {currentView === 'templates' && (
+                  <RequirementTemplatesView />
+                )}
 
-              {currentView === 'documents-review' && (
-                <DocumentReviewQueue />
-              )}
+                {currentView === 'regulatory' && (
+                  <RegulatoryUpdateCentre />
+                )}
 
-              {currentView === 'calendar' && (
-                <ComplianceCalendar
-                  onSelectBusiness={(id) => handleNavigate('client-profile', { businessId: id })}
-                />
-              )}
+                {currentView === 'documents-review' && (
+                  <DocumentReviewQueue />
+                )}
 
-              {currentView === 'audit' && (
-                <AuditLogView />
-              )}
-            </>
-          )}
+                {currentView === 'calendar' && (
+                  <ComplianceCalendar
+                    onSelectBusiness={(id) => handleNavigate('client-profile', { businessId: id })}
+                  />
+                )}
 
-          {/* CLIENT & QA MANAGER VIEWS */}
-          {(user?.role === 'CLIENT' || user?.role === 'MANAGER' || user?.role === 'STAFF') && (
-            <>
-              {currentView === 'whats-due' && (
-                <WhatsDue
-                  onOpenUpload={(req) => setUploadReq(req)}
-                  onNavigate={handleNavigate}
-                />
-              )}
+                {currentView === 'audit' && (
+                  <AuditLogView />
+                )}
+              </>
+            )}
 
-              {currentView === 'dashboard' && (
-                <WhatsDue
-                  onOpenUpload={(req) => setUploadReq(req)}
-                  onNavigate={handleNavigate}
-                />
-              )}
+            {/* CLIENT & QA MANAGER VIEWS */}
+            {(user?.role === 'CLIENT' || user?.role === 'MANAGER' || user?.role === 'STAFF') && (
+              <>
+                {currentView === 'whats-due' && (
+                  <WhatsDue
+                    onOpenUpload={(req) => setUploadReq(req)}
+                    onNavigate={handleNavigate}
+                  />
+                )}
 
-              {currentView === 'tasks' && (
-                <MyTasksView
-                  onOpenUpload={(req) => setUploadReq(req)}
-                  onOpenRegulatory={() => handleNavigate('regulatory')}
-                />
-              )}
+                {currentView === 'dashboard' && (
+                  <WhatsDue
+                    onOpenUpload={(req) => setUploadReq(req)}
+                    onNavigate={handleNavigate}
+                  />
+                )}
 
-              {currentView === 'regulatory' && (
-                <ClientRegulatoryView />
-              )}
+                {currentView === 'tasks' && (
+                  <MyTasksView
+                    onOpenUpload={(req) => setUploadReq(req)}
+                    onOpenRegulatory={() => handleNavigate('regulatory')}
+                  />
+                )}
 
-              {currentView === 'documents' && (
-                <ClientDocumentsView
-                  onOpenUpload={(req) => setUploadReq(req)}
-                />
-              )}
-            </>
-          )}
+                {currentView === 'regulatory' && (
+                  <ClientRegulatoryView />
+                )}
+
+                {currentView === 'documents' && (
+                  <ClientDocumentsView
+                    onOpenUpload={(req) => setUploadReq(req)}
+                  />
+                )}
+              </>
+            )}
+          </ErrorBoundary>
         </main>
       </div>
 
